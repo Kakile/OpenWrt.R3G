@@ -54,9 +54,9 @@ jobs:
 
     - name: Configuration Customization - Build
       env:
-        CONFIG_FILE: '.config'
+        CONFIG_FILE: 'R3G.config'
       run: |
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/R3G.config
         chmod +x ./customize.sh && ./customize.sh
         cd openwrt && make defconfig
         

@@ -10,12 +10,12 @@ on:
     branches:
       - main
     paths:
-      - '.config'
+      - 'r3g.config'
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: openwrt-24.10
-  CONFIG_FILE: .config
+  CONFIG_FILE: r3g.config
   USE_SH: test.sh
   DIY_SH: diy.sh
   UPLOAD_FIRMWARE: true

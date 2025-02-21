@@ -1,80 +1,130 @@
-#
-# This is free software, lisence use MIT.
-# 
-# Copyright (C) 2019 P3TERX <https://p3terx.com>
-# Copyright (C) 2020 KFERMercer <KFER.Mercer@gmail.com>
-# 
-# <https://github.com/KFERMercer/OpenWrt-CI>
-#
-
-name: OpenWrt
+name: OpenWrt-for-R3G 主路由
 
 on:
-  push:
-    branches: 
-      - master
-  schedule:
-    - cron: 0 0 1 * *
+  workflow_dispatch:
   watch:
     types: started
+  release:
+    types: published
+  push:
+    branches:
+      - main
+    paths:
+      - 'r3g.config'
+
+env:
+  REPO_URL: https://github.com/openwrt/openwrt
+  REPO_BRANCH: 24.10
+  CONFIG_FILE: .config
+  USE_SH: test.sh
+  DIY_SH: diy.sh
+  UPLOAD_FIRMWARE: true
+  UPLOAD_COWTRANSFER: true
+  SSH_ACTION: false
+  TNAME: MI_R3G
+  #编译流程开关，设置为true则执行编译流程并上传编译好的固件
+  #设置为false则只上传配置文件
+  COMPILE: true 
+  
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event.repository.owner.id == github.event.sender.id
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@master
+    - name: Checkout
+      uses: actions/checkout@master
 
-      - name: Initialization environment
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          sudo -E apt-get -yqq update
-          sudo -E apt-get -yqq install build-essential asciidoc binutils bzip2 lib32gcc-s1 gawk gettext git libncurses5-dev libz-dev patch python3 unzip zlib1g-dev libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler g++-multilib
-          sudo -E apt-get -y autoremove --purge
-          sudo -E apt-get clean
-      - name: Download lede
-        run: |
-          git clone https://github.com/coolsnowwolf/lede
-          cp .config ./lede/.config
-          mv ./lede/* ./
-      - name: Install Helloword
-        run: |
-          echo "src-git helloworld https://github.com/fw876/helloworld" >> ./feeds.conf.default 
-      - name: Install OpenClash
-        run: |
-          mkdir package/luci-app-openclash
-          cd package/luci-app-openclash
-          git init
-          git remote add -f origin https://github.com/vernesong/OpenClash.git
-          git config core.sparsecheckout true
-          echo "luci-app-openclash" >> .git/info/sparse-checkout
-          git pull --depth 1 origin master
-          git branch --set-upstream-to=origin/master master
-          pushd luci-app-openclash/tools/po2lmo
-          make && sudo make install
-          popd
-      - name: Update feeds
-        run: |
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-      - name: Costom configure file
-        run: |
-          make defconfig
-      - name: Download package source code
-        run: |
-          make download -j8
-          find dl -size -1024c -exec ls -l {} \;
-          find dl -size -1024c -exec rm -f {} \;
-      - name: Compile firmware
-        run: |
-          echo -e "$(nproc) thread build."
-          make -j$(nproc) V=s
-      - name : Upload artifact
-        uses: actions/upload-artifact@master
-        with:
-          name: OpenWrt_firmware
-          path: bin/targets/
-          
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
+        mv sh/$USE_SH r3g.sh
+        chmod +x r3g.sh
+        sh r3g.sh init
+        mv -f r3g.sh openwrt/
+        mv r3g.config openwrt/.config
+
+    - name: Prepare resouces
+      run: |
+        cd openwrt/package
+        sh ../r3g.sh clone
+        cd ..
+        sh r3g.sh addSrc
+        sh r3g.sh feeds
+
+    - name: Load custom configuration
+      run: |
+        cd openwrt
+        # 修改默认IP
+        sed -i 's/192.168.1.1/192.168.3.1/g' package/base-files/files/bin/config_generate
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      if: env.SSH_ACTION == 'true'
+      with:
+        limit-access-to-actor: true
+
+    - name: Organize config file
+      run: |
+        mkdir -p config
+        cp -f openwrt/.config config/$CONFIG_FILE
+        
+    - name: Upload .config file
+      uses: actions/upload-artifact@master
+      with:
+        name: config
+        path: config
+
+    - name: Download package
+      if: env.COMPILE == 'true'
+      run: |
+        cd openwrt
+        make defconfig
+        make download -j8
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+
+    - name: Compile the firmware
+      id: compile
+      if: env.COMPILE == 'true'
+      run: |
+        cd openwrt
+        echo -e "$(nproc) thread compile"
+        make -j$(nproc) || make -j1 V=s
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Organize files
+      id: organize
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      run: |
+        cp openwrt/.config openwrt/bin/targets/*/*/
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        rm -f version.buildinfo feeds.buildinfo sha256sums \
+        *.manifest
+        md5sum config.buildinfo >> md5.txt
+        md5sum *-initramfs-kernel.bin >> md5.txt
+        md5sum *-squashfs-sysupgrade.bin >> md5.txt
+        md5sum  *-squashfs-rootfs0.bin >> md5.txt
+        md5sum  *-squashfs-kernel1.bin >> md5.txt
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Upload firmware directory
+      uses: actions/upload-artifact@master
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: OpenWrt_MI-R3G
+        path: ${{ env.FIRMWARE }}
+
+    - name: Upload firmware to cowtransfer
+      if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
+      run: |
+        cd ${FIRMWARE}
+        zip -r OpenWrt_$TNAME.zip *
+        wget https://github.com/Mikubill/cowtransfer-uploader/releases/download/v0.4.23/cowtransfer-uploader_0.4.23_linux_amd64.tar.gz
+        tar -zxf cowtransfer-uploader_0.4.23_linux_amd64.tar.gz
+        ./cowtransfer-uploader -s -p 8 OpenWrt_$TNAME.zip

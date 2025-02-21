@@ -14,7 +14,7 @@ on:
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
-  REPO_BRANCH: 24.10
+  REPO_BRANCH: openwrt-24.10
   CONFIG_FILE: .config
   USE_SH: test.sh
   DIY_SH: diy.sh

@@ -27,15 +27,15 @@ DC|Output:5V/1A
 > 仅收录WebUI,对应核心·依赖·翻译包自动补齐
 ### 通过官方渠道✨
 
-* luci-i18n-base-zh-cn 0️⃣
-* luci-app-ksmbd 1️⃣
-* luci-app-upnp 3️⃣
-* block-mount 4️⃣
+* luci-i18n-base-zh-cn
+* luci-app-ksmbd
+* luci-app-upnp
+* block-mount
 * luci-app-filemanager
 
 ### 通过三方渠道🪄
-* luci-app-mihomo 2️⃣
-* luci-theme-design 5️⃣
+* luci-app-mihomo
+* luci-theme-design
 
 $$Custom \quad Settings$$
 ```html

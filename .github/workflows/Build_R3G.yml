@@ -1,4 +1,4 @@
-name: Build-XiaoMiR3G-Manual
+name: Build-OpenWrtR3G-Manual
 
 # 添加一个按钮来触发工作流，并仅要求输入 tag_name
 on: 
@@ -10,11 +10,12 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # 指定运行环境为最新的 Ubuntu
 
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+      # 检出代码仓库到工作环境
 
     # 获取当前日期并设置为环境变量，用于后续的 release_name
     - name: Get Time
@@ -25,87 +26,110 @@ jobs:
     # 初始化环境，卸载不必要的软件，安装构建所需的依赖
     - name: Initialization Environment
       env:
-        DEBIAN_FRONTEND: noninteractive
+        DEBIAN_FRONTEND: noninteractive  # 设置为非交互式安装
       run: |
         set +e
+        # 删除所有 Docker 镜像，忽略错误
         docker rmi $(docker images -q) || true
         echo "Deleting files, please wait ..."
+        # 删除不必要的文件和目录，释放空间
         sudo rm -rf \
           /usr/share/dotnet \
           /etc/mysql \
           /usr/local/lib/android \
           /opt/ghc \
           /etc/php
-        sudo -E apt-get -y purge azure-cli* docker* ghc* zulu* hhvm* llvm* firefox* google* dotnet* aspnetcore* powershell* openjdk* adoptopenjdk* mysql* php* mongodb* moby* snap* || true
+        # 卸载不需要的软件包
+        sudo -E apt-get -y purge azure-cli* docker* ghc* zulu* hhvm* llvm* firefox* google* dotnet* aspnetcore* \
+          powershell* openjdk* adoptopenjdk* mysql* php* mongodb* moby* snap* || true
+        # 更新软件包列表
         sudo -E apt-get update
-        sudo -E apt-get -y install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp ninja-build p7zip p7zip-full patch pkgconf python-is-python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev qemu-img
+        # 安装构建 OpenWrt 所需的依赖包
+        sudo -E apt-get -y install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+          bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib \
+          git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev \
+          libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev \
+          libssl-dev libtool lrzsz mkisofs msmtp ninja-build p7zip p7zip-full patch pkgconf python-is-python3 \
+          python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion swig texinfo \
+          uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev qemu-img
+        # 自动删除不再需要的软件包
         sudo -E apt-get -y autoremove --purge
+        # 清理本地已下载的包文件
         sudo -E apt-get clean
 
     # 克隆 OpenWrt 源代码到 openwrt 目录
     - name: Clone Source Code
       env: 
-        REPO_URL: https://www.github.com/openwrt/openwrt
-        REPO_BRANCH: openwrt-24.10
+        REPO_URL: https://www.github.com/openwrt/openwrt  # 源代码仓库地址
+        REPO_BRANCH: openwrt-24.10  # 要克隆的分支
       run: |
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
 
     # 导入外部的 feeds（软件包源），添加自定义的软件包源
     - name: Import External Feeds 
-      working-directory: ./openwrt
+      working-directory: ./openwrt  # 指定工作目录为 openwrt
       run: |
-        curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh --no-sfe
+        # 添加 Turbo ACC 网络加速插件
+        curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && \
+        bash add_turboacc.sh --no-sfe
+        # 添加自定义的软件包源到 feeds.conf.default
         echo "src-git nikki https://github.com/nikkinikki-org/OpenWrt-nikki.git;main" >> "feeds.conf.default" 
 
     # 更新和安装 feeds（软件包）
     - name: Update & Install feeds
       working-directory: ./openwrt
       run: |
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
+        ./scripts/feeds update -a  # 更新所有的 feeds
+        ./scripts/feeds install -a  # 安装所有的 feeds
 
     # 配置定制化的编译选项，导入自定义配置文件，执行自定义脚本
     - name: Configuration Customization - Build
       run: |
+        # 如果存在自定义配置文件，则移动到 openwrt/.config
         if [ -e './Config/R3G.config' ]; then
           mv './Config/R3G.config' openwrt/.config
         fi
+        # 赋予自定义脚本执行权限并执行
         chmod +x ./customize.sh && ./customize.sh
+        # 进入 openwrt 目录，生成默认配置
         cd openwrt && make defconfig
-        
+                        
     # 下载所有需要的源代码包
     - name: Download Package
       working-directory: ./openwrt
       run: |
-        make download -j$(nproc)
+        make download -j$(nproc)  # 使用多线程下载
+        # 查找下载失败或文件大小异常的包并列出
         find dl -size -1024c -exec ls -l {} \;
+        # 删除下载失败的包
         find dl -size -1024c -exec rm -f {} \;
 
+    # 编译固件
     - name: Build Firmware
       working-directory: ./openwrt
       run: |
         echo "$(nproc) thread build."
-        make -j$(nproc) V=s
+        make -j$(nproc) V=s  # 使用多线程编译，显示详细日志
 
-    # 将构建产物打包
+    # 将构建产物打包成 ZIP 文件
     - name: Packaged Build Products
       run: |
         zip -r OpenWrt-XiaoMi-3G.zip openwrt/bin
 
-    # 上传构建产物到 Artifacts
+    # 上传构建产物到 GitHub Actions 的 Artifacts，便于直接下载
     - name: Upload Artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: OpenWrt-XiaoMi-3G
-        path: OpenWrt-XiaoMi-3G.zip
+        name: OpenWrt-XiaoMi-3G  # Artifacts 的名称
+        path: OpenWrt-XiaoMi-3G.zip  # 要上传的文件路径
 
-    # 创建 Release 并上传资产
+    # 创建 Release，并上传构建产物作为资产
     - name: Create Release
       uses: ncipollo/release-action@v1
       with:
-        tag: ${{ github.event.inputs.tag_name }}
-        name: ${{ env.release_name }}
-        artifacts: OpenWrt-XiaoMi-3G.zip
-        token: ${{ secrets.GITHUB_TOKEN }}
-        draft: false
-        prerelease: false
+        tag: ${{ github.event.inputs.tag_name }}  # 使用输入的 tag_name 作为标签
+        name: ${{ env.release_name }}  # 使用之前获取的 release_name
+        artifacts: OpenWrt-XiaoMi-3G.zip  # 要上传的资产文件
+        token: ${{ secrets.GITHUB_TOKEN }}  # 用于认证的 GitHub Token
+        draft: false  # 是否作为草稿发布
+        prerelease: false  # 是否为预发布版本

@@ -1,3 +1,7 @@
+  option 'geosite_url' 'https://mirror.ghproxy.com/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat'
+ 	option 'geoip_mmdb_url' 'https://mirror.ghproxy.com/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb'
+ 	option 'geoip_dat_url' 'https://mirror.ghproxy.com/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat'
+ 	option 'geoip_asn_url' 'https://mirror.ghproxy.com/https://github.com/xishang0128/geoip/releases/download/latest/GeoLite2-ASN.mmdb'
 # 该配置由本人查看文档、参考他人配置以及个人需求编辑，难免有不合理之处，如果你对该配置有什么建议或意见还请指出，我会及时修改，争取做一个适合大部分人使用的懒人配置
 # Telegram channel @ksc666
 # 大部分配置 参考 @CHIZI-0618 的 box4magisk

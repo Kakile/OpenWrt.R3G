@@ -17,7 +17,7 @@ RAM|RAM 256MB DDR3-1200
 Wireless|2.4G MT7603EN WiFi 2X2 802.11N<br>5G MT7612EN WiFi 2X2 802.11AC
 Ethernet|3x1000Mbit/s VLAN Support
 USB|1x3.0 
-DC|Output:5V/1A
+DC Output|5V/1A
 
 ```
 [Latest Stable Release](https://firmware-selector.openwrt.org/)

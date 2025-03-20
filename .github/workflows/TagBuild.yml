@@ -43,10 +43,13 @@ jobs:
 
     - name: Clone Source Code
       env: 
-        REPO_URL: https://www.github.com/openwrt/openwrt
-        REPO_BRANCH: openwrt-24.10
+         REPO_URL: https://www.github.com/openwrt/openwrt
+         REPO_TAG: 24.10.0
       run: |
-        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
+        git clone --depth 1 $REPO_URL openwrt
+        cd openwrt
+        git fetch --tags --depth 1
+        git checkout $REPO_TAG
 
     - name: Import External Feeds 
       working-directory: ./openwrt

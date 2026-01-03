@@ -1,4 +1,4 @@
-name: Build-XiaoMi-3G
+name: Release-R3G
 
 # 添加一个按钮来触发工作流，并仅要求输入 tag_name
 on: 

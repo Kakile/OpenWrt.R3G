@@ -16,6 +16,7 @@ jobs:
         with:
           repository: LiBwrt/openwrt-6.x
           ref: 25.12-nss
+          path: libwrt
 
       - name: Install dependencies
         run: |
@@ -28,15 +29,9 @@ jobs:
             genisoimage msmtp nano ninja-build p7zip p7zip-full patch pkgconf python3 python3-pip libpython3-dev qemu-utils \
             rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
 
-      - name: Enter libwrt and update feeds
+      - name: Prepare .config
+        working-directory: libwrt
         run: |
-          cd libwrt
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-
-      - name: Configure for AX18
-        run: |
-          cd libwrt
           echo "CONFIG_TARGET_qualcommax=y" > .config
           echo "CONFIG_TARGET_qualcommax_ipq6000=y" >> .config
           echo "CONFIG_TARGET_qualcommax_ipq6000_DEVICE_ax18=y" >> .config
@@ -48,11 +43,13 @@ jobs:
 
           make defconfig
 
+      - name: Download sources
+        working-directory: libwrt
+        run: make -j$(nproc) download
+
       - name: Build firmware
-        run: |
-          cd libwrt
-          make -j$(nproc) download
-          make -j$(nproc) V=s
+        working-directory: libwrt
+        run: make -j$(nproc) V=s
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4

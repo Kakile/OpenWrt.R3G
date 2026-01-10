@@ -28,7 +28,7 @@ jobs:
 
       - name: Copy ax18.config
         run: |
-          cp Config/AX18.config libwrt/.config
+          cp ./Config/AX18.config libwrt/.config
 
       - name: Update & install feeds
         working-directory: libwrt

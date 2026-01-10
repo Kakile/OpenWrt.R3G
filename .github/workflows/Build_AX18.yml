@@ -30,10 +30,15 @@ jobs:
         run: |
           cp Config/AX18.config libwrt/.config
 
-      - name: Prepare build
+      - name: Update & install feeds
         working-directory: libwrt
         run: |
-          make defconfig
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Prepare build
+        working-directory: libwrt
+        run: make defconfig
 
       - name: Download sources
         working-directory: libwrt

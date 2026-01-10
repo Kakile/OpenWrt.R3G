@@ -6,9 +6,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        wifi: [true, false]
 
     steps:
       - name: Checkout source
@@ -29,18 +26,13 @@ jobs:
             genisoimage msmtp nano ninja-build p7zip p7zip-full patch pkgconf python3 python3-pip libpython3-dev qemu-utils \
             rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
 
-      - name: Prepare .config
+      - name: Copy ax18.config
+        run: |
+          cp Config/AX18.config libwrt/.config
+
+      - name: Prepare build
         working-directory: libwrt
         run: |
-          echo "CONFIG_TARGET_qualcommax=y" > .config
-          echo "CONFIG_TARGET_qualcommax_ipq6000=y" >> .config
-          echo "CONFIG_TARGET_qualcommax_ipq6000_DEVICE_ax18=y" >> .config
-
-          if [ "${{ matrix.wifi }}" = "false" ]; then
-            echo "# CONFIG_PACKAGE_kmod-ath11k is not set" >> .config
-            echo "# CONFIG_PACKAGE_ath11k-firmware-ipq6018 is not set" >> .config
-          fi
-
           make defconfig
 
       - name: Download sources
@@ -54,5 +46,5 @@ jobs:
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
-          name: ax18-${{ matrix.wifi == 'true' && 'wifi' || 'nowifi' }}
-          path: libwrt/bin/targets/qualcommax/ipq6000/
+          name: ax18-wifi
+          path: libwrt/bin/targets/qualcommax/ipq60xx/

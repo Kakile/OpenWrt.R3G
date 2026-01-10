@@ -8,7 +8,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
+      - name: Checkout your repo
+        uses: actions/checkout@v4
+
+      - name: Checkout OpenWrt source
         uses: actions/checkout@v4
         with:
           repository: LiBwrt/openwrt-6.x

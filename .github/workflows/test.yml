@@ -1,4 +1,4 @@
-name: Build Stable
+name: Build IQP6018 Stable
 
 on:
   workflow_dispatch:
@@ -48,6 +48,7 @@ jobs:
         working-directory: libwrt
         run: |
           cp ../Config/IPQ6018-nowifi.config .config
+          echo 'CONFIG_VERSION_NUMBER="25.12.0-rc2"' >> .config
           make defconfig
 
       - name: Download sources
@@ -112,6 +113,7 @@ jobs:
         working-directory: libwrt
         run: |
           cp ../Config/IPQ6018.config .config
+          echo 'CONFIG_VERSION_NUMBER="25.12.0-rc2"' >> .config
           make defconfig
 
       - name: Download sources

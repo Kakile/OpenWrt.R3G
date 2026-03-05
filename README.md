@@ -78,7 +78,33 @@ $$Custom \quad Settings$$
 - [ ] luci-app-wol
 - [ ] luci-app-sqm
 - [ ] luci-app-wifidog
+- [ ] kmod-usb-core
+- [ ] kmod-usb3
+- [ ] kmod-usb-net
+- [ ] kmod-usb-net-rndis
+```
+Kernel modules  --->
+-*- kmod-usb-core............................................ Support for USB
+-*- kmod-usb-net............... Kernel modules for USB-to-Ethernet convertors
+-*- kmod-usb-net-cdc-ether.............. Support for cdc ethernet connections
+<*> kmod-usb-net-rndis......................... Support for RNDIS connections
+<*> kmod-usb-ohci............................... Support for OHCI controllers
+<*> kmod-usb2................................... Support for USB2 controllers
+<*> kmod-usb3................................... Support for USB3 controllers
+-*- kmod-usb-storage..................................... USB Storage support
+<*> kmod-usb-storage-extras.................... Extra drivers for usb-storage
+<*> kmod-usb-storage-uas.................... USB Attached SCSI (UASP) support
+<*> kmod-usb-uhci............................... Support for UHCI controllers
+  
+Network  --->
+<*> dhcpcd..................... DHCPv4/IPv4LL/IPv6RS/DHCPv6 quad stack client
 
+Utilities  --->
+<*> tar.............................................................. GNU tar
+<*> usb-modeswitch................................ USB mode switching utility
+-*- usbids....................................................... USB ID list
+<*> usbutils................................... USB devices listing utilities
+```
 <table>
 <thead>
 <tr>
